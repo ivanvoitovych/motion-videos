@@ -8,7 +8,7 @@ Product videos made from web pages, with Claude Code doing the work.
 walkthrough made for [Urlicer](https://urlicer.com); the full 41 seconds, with music, is
 [on YouTube](https://youtu.be/5QqihS1RYZA).*
 
-![The real Urlicer app: a link is pasted and shortened, two links are selected and moved to a folder](media/urlicer-app.gif)
+![The real Urlicer app: the dashboard, the links page with a broken-link warning, the folder tree](media/urlicer-app.gif)
 
 *Recorded: the real app, driven by a script. Nobody is holding the mouse. Change the UI, run the
 script again, get the same video of the new UI.*
