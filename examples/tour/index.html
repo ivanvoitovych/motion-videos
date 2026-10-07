@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- "Tour": the sample app in use, 16:9. Everything on screen during the take is the app itself,
+     recorded by record.mjs in this folder (run that first; the take lives in out/, which is not in
+     git). This page adds the opening title and the closing card; the captions during the take are
+     in record.mjs (t.say).
+     Render: node render.mjs examples/tour --blur 2 -->
+<html lang="en" data-formats="wide">
+<head>
+<meta charset="utf-8">
+<title>tour</title>
+<link rel="stylesheet" href="../../lib/stage.css">
+<style>
+  .stage { --intro: 2.2s; }
+  .clip { left: 0; top: 0; width: 1920px; height: 1080px; }
+
+  /* Opening title over the app, then out of the way. It is complete at frame 0, with no entrance:
+     frame 0 is the cover, the picture a platform shows before the video plays. */
+  .title { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px; animation: gone .45s ease calc(var(--intro) - .45s); }
+  .title h1 { font: 700 92px/1.05 var(--font-head); letter-spacing: -.02em; text-align: center; }
+  .title p { font: 400 36px/1 var(--font-body); color: var(--muted); }
+  @keyframes gone { to { opacity: 0; visibility: hidden; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+
+  /* Closing card: --out is set from the take's length by the script below */
+  .end { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 34px; animation: show .5s ease var(--out); }
+  .end h2 { font: 700 84px/1.1 var(--font-head); letter-spacing: -.02em; animation: rise .6s var(--ease) calc(var(--out) + .4s); }
+  .end p { font: 600 38px/1 var(--font-mono); color: var(--accent); animation: rise .6s var(--ease) calc(var(--out) + .8s); }
+  @keyframes show { from { opacity: 0; visibility: hidden; } }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="clip" data-take="../../out/tour-take" data-at="2"></div>
+
+  <!-- COPY: opening and closing. -->
+  <div class="title">
+    <h1>Nobody is holding the mouse.</h1>
+    <p>A scripted take of a real web app</p>
+  </div>
+  <div class="end">
+    <h2>One script. Shoot it again any time.</h2>
+    <p>node examples/tour/record.mjs</p>
+  </div>
+</div>
+<script src="../../out/tour-take/timeline.js"></script>
+<script src="../../lib/clip.js"></script>
+<script>
+  // The video is as long as the take, plus 3.5 s for the closing card.
+  const takeEnd = window.__clipDuration || 2000;
+  document.querySelector('.stage').style.setProperty('--out', (takeEnd / 1000 - .2) + 's');
+  document.documentElement.dataset.duration = Math.round(takeEnd + 3500);
+</script>
+<script src="../../lib/stage.js"></script>
+</body>
+</html>

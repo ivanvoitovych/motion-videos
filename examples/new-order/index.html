@@ -1,0 +1,181 @@
+<!doctype html>
+<!-- "New order": a drawn video of an app screen. The sample app (../sample-app, the made-up plant
+     shop Fernway) is rebuilt here from its own stylesheet and animated: a new order is added
+     through the dialog and lands first in the orders list. 8 s, wide (16:9) and tall (9:16).
+     This is the model for drawing YOUR app's screen; the comments say what had to be undone from
+     the app's CSS and why. Everything on screen is made up: the shop, the customers, the numbers.
+     Preview: open this file in a browser. Render: node render.mjs examples/new-order [--blur 2] -->
+<html lang="en" data-formats="wide tall" data-duration="8000">
+<head>
+<meta charset="utf-8">
+<title>new-order</title>
+<link rel="stylesheet" href="../../lib/stage.css">
+<!-- The product's own styles, so the drawn interface matches the real one. Its :root tokens
+     (--bg, --ink, --accent, --muted) replace the kit's of the same names: the video takes the
+     product's colours. -->
+<link rel="stylesheet" href="../sample-app/app.css">
+<style>
+  /* ---- Timing: when each part starts ---- */
+  .stage {
+    --go-new: .5s;    /* the cursor leaves for "New order"; it clicks .6s later */
+    --open: 1.15s;    /* the dialog opens */
+    --type: 1.7s;     /* the customer's name is typed, one letter every .09s */
+    --go-save: 2.9s;  /* the cursor goes to "Save order"; it clicks .6s later */
+    --saved: 3.55s;   /* the dialog closes, the new row arrives, the toast shows */
+    --close: 6.3s;    /* the scene leaves, the closing card comes in */
+  }
+  .drift { --s: 0s; --d: var(--close); }   /* the whole scene comes slowly closer while it is on */
+
+  /* app.css is written for a whole page; undo what it does to this one. */
+  body { display: block; min-height: 0; background: #111; }
+
+  .head { position: absolute; left: 135px; top: 58px; font: 700 62px/1.1 var(--font-head); letter-spacing: -.02em; }
+  .head em { font-style: normal; color: var(--accent); }
+
+  .shot { position: absolute; left: 135px; top: 164px; width: 1650px; }
+  .browser-bar span { margin-left: 18px; padding: 0 16px; border-radius: 8px; background: #fff; font: 400 17px/28px var(--font-body); color: var(--muted); }
+
+  /* The app at its own size (1100 x 560), shown one and a half times larger. */
+  .app { position: relative; display: flex; width: 1100px; height: 560px; zoom: 1.5; background: var(--bg); font-size: 15px; line-height: 1.45; overflow: hidden; }
+  .app .view.on { animation: none; }                     /* the app fades its view in; frame 0 must be complete */
+  .app .veil, .app .toast { position: absolute; }        /* fixed in the app; here they belong to the drawn window */
+
+  /* The dialog: in at --open (the app does this with a transition, which cannot be seeked), out at --saved.
+     Two animations of opacity cannot share an element, so the way out is on a wrapper. */
+  .modal { position: absolute; inset: 0; animation: modal-out .25s ease var(--saved); }
+  .app .veil { transition: none; animation: veil-in .25s ease var(--open); }
+  .app .dialog { transition: none; animation: dialog-in .3s var(--ease) var(--open); }
+  @keyframes veil-in { from { opacity: 0; visibility: hidden; } }
+  @keyframes dialog-in { from { transform: translateY(16px) scale(.97); } }
+  @keyframes modal-out { to { opacity: 0; visibility: hidden; } }
+
+  /* The customer field: a drawn input, focused when the dialog is open, letters appearing one by one. */
+  .field { display: block; height: 43px; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--panel); color: var(--ink); font-weight: 400; font-size: 15px; box-shadow: 0 0 0 3px rgba(76, 175, 120, .25); }
+  .field i { font-style: normal; white-space: pre; animation: key .01s linear calc(var(--type) + var(--i) * .09s); }
+  @keyframes key { from { opacity: 0; } }
+
+  /* The new row: no height until --saved, then it opens and the others move down; the app's own
+     green flash (tr.fresh) starts at the same moment. */
+  .app tr.fresh { animation: fresh 2.4s ease-out var(--saved); }
+  .app tr.fresh td { animation: row-in .45s var(--ease) var(--saved); }
+  .app tr.fresh .badge { animation: badge-in .45s var(--ease) var(--saved); }
+  @keyframes row-in { from { padding-top: 0; padding-bottom: 0; line-height: 0; font-size: 0; border-bottom-width: 0; opacity: 0; } }
+  @keyframes badge-in { from { padding-top: 0; padding-bottom: 0; font-size: 0; } }
+
+  .app .toast { transition: none; opacity: 1; transform: none; animation: toast-in .3s var(--ease) calc(var(--saved) + .2s); }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(14px); } }
+
+  /* The cursor: it rests under the list, glides to "New order" (.to-new), later to "Save order"
+     (.to-save). One wrapper per move, because two transforms on one element do not add up. */
+  .to-new { position: absolute; left: 1002px; top: 52px; z-index: 5; animation: to-new .6s cubic-bezier(.5, 0, .2, 1) var(--go-new); }
+  .to-save { animation: to-save .6s cubic-bezier(.5, 0, .2, 1) var(--go-save); }
+  @keyframes to-new { from { transform: translate(-260px, 300px); } }
+  @keyframes to-save { to { transform: translate(-312px, 376px); } }
+  .cursor { display: block; width: 26px; }
+  .ring { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 0 0 3px var(--accent); opacity: 0; animation: ring .5s ease-out var(--at); }
+  @keyframes ring { 0% { opacity: 0; } 1% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.5); } }
+
+  /* ---- Portrait. A wide app window does not shrink into a 768 px column: the text would be
+          unreadable. So this is a different crop of the same screen: no sidebar, no status filter,
+          four columns in place of six, and the cursor's two trips measured again. ---- */
+  [data-format="tall"] .head { left: var(--safe-side); top: var(--safe-top); width: 768px; font-size: 72px; }
+  [data-format="tall"] .shot { left: var(--safe-side); top: 480px; width: 768px; }
+  [data-format="tall"] .app { width: 512px; height: 470px; }
+  [data-format="tall"] .app .side, [data-format="tall"] .app label.inline { display: none; }
+  [data-format="tall"] .app main { padding: 18px 16px; }
+  [data-format="tall"] .app th:nth-child(3), [data-format="tall"] .app td:nth-child(3),
+  [data-format="tall"] .app th:nth-child(4), [data-format="tall"] .app td:nth-child(4) { display: none; }
+  [data-format="tall"] .app th, [data-format="tall"] .app td { padding: 11px 12px; }
+  [data-format="tall"] .app .dialog { width: 400px; padding: 20px; gap: 12px; }
+  [data-format="tall"] .app .toast { right: 14px; bottom: 14px; }
+  [data-format="tall"] .to-new { left: 440px; top: 40px; animation-name: to-new-tall; }
+  [data-format="tall"] .to-save { animation-name: to-save-tall; }
+  [data-format="tall"] .drift { transform-origin: 50% 45%; }
+  @keyframes to-new-tall { from { transform: translate(-200px, 330px); } }
+  @keyframes to-save-tall { to { transform: translate(-70px, 350px); } }
+
+  /* The scene leaves, the closing card comes in. */
+  .scene { position: absolute; inset: 0; animation: scene-out .35s ease-in var(--close); }
+  @keyframes scene-out { to { opacity: 0; transform: translateY(-30px); } }
+  .end { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 28px; }
+  .end b { display: flex; align-items: center; gap: 22px; font: 700 96px/1.05 var(--font-head); letter-spacing: -.02em; animation: end-in .5s var(--ease) calc(var(--close) + .3s); }
+  .end b .leaf { width: 76px; height: 76px; border-radius: 8px 48px; }
+  .end small { font: 400 40px/1.3 var(--font-body); color: var(--muted); animation: end-in .5s var(--ease) calc(var(--close) + .55s); }
+  @keyframes end-in { from { opacity: 0; transform: translateY(26px); } }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- COPY: every word on screen is in this block. -->
+  <div class="drift">
+  <div class="scene">
+    <h1 class="head">A new order, <em>first in the list.</em></h1>
+
+    <div class="browser shot">
+      <div class="browser-bar"><i></i><i></i><i></i><span>fernway.example.com/orders</span></div>
+      <div class="browser-view"><div class="app">
+
+        <aside class="side">
+          <div class="brand"><span class="leaf"></span>Fernway</div>
+          <nav><a>Dashboard</a><a class="on">Orders</a><a>Settings</a></nav>
+          <div class="who"><span class="avatar">MK</span><span>maya@example.com</span></div>
+        </aside>
+
+        <main>
+          <section class="view on">
+            <header>
+              <h1>Orders</h1>
+              <label class="inline">Status <select><option>All</option></select></label>
+              <button class="btn primary">New order</button>
+            </header>
+            <div class="card"><table>
+              <thead><tr><th>Order</th><th>Customer</th><th>Plant</th><th>Qty</th><th>Total</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr class="fresh"><td>#1048</td><td>Priya Raman</td><td>Boston fern</td><td>1</td><td>$24</td><td><span class="badge pending">Pending</span></td></tr>
+                <tr><td>#1047</td><td>Maya Kern</td><td>Monstera</td><td>1</td><td>$39</td><td><span class="badge pending">Pending</span></td></tr>
+                <tr><td>#1046</td><td>Tom Idris</td><td>Snake plant</td><td>3</td><td>$54</td><td><span class="badge pending">Pending</span></td></tr>
+                <tr><td>#1045</td><td>Nora Ellis</td><td>Boston fern</td><td>2</td><td>$48</td><td><span class="badge shipped">Shipped</span></td></tr>
+                <tr><td>#1044</td><td>Alex Poole</td><td>Fiddle-leaf fig</td><td>1</td><td>$31</td><td><span class="badge shipped">Shipped</span></td></tr>
+                <tr><td>#1043</td><td>Ines Duarte</td><td>Monstera</td><td>2</td><td>$78</td><td><span class="badge delivered">Delivered</span></td></tr>
+                <tr><td>#1042</td><td>Sam Okafor</td><td>Boston fern</td><td>5</td><td>$120</td><td><span class="badge delivered">Delivered</span></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+        </main>
+
+        <div class="modal"><div class="veil on">
+          <form class="card dialog">
+            <h2>New order</h2>
+            <label>Customer <span class="field" id="typed">Priya Raman</span></label>
+            <label>Plant <select><option>Boston fern</option></select></label>
+            <label>Quantity <output>1</output><input type="range" min="1" max="12" value="1"></label>
+            <label class="check"><input type="checkbox"> Gift wrap</label>
+            <div class="actions"><button class="btn" type="button">Cancel</button><button class="btn primary" type="button">Save order</button></div>
+          </form>
+        </div></div>
+
+        <div class="toast">Order #1048 saved</div>
+
+        <div class="to-new"><div class="to-save">
+          <div class="ring" style="--at: calc(var(--go-new) + .6s)"></div>
+          <div class="ring" style="--at: calc(var(--go-save) + .6s)"></div>
+          <svg class="cursor" viewBox="0 0 28 38"><path d="M2 2v29l7.5-7 5 12 5-2-5-11.5H25z" fill="#14181F" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg>
+        </div></div>
+
+      </div></div>
+    </div>
+  </div>
+  </div>
+
+  <div class="end"><b><span class="leaf"></span>Fernway</b><small>Every order, in one list.</small></div>
+
+</div>
+<script>
+// Splits the typed name into letters so each can appear at its own moment. The motion is all CSS.
+const typed = document.getElementById('typed');
+typed.innerHTML = [...typed.textContent].map((c, i) => `<i style="--i:${i}">${c}</i>`).join('');
+</script>
+<script src="../../lib/stage.js"></script>
+</body>
+</html>

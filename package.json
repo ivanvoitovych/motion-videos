@@ -1,0 +1,23 @@
+{
+  "name": "motion-videos",
+  "version": "0.1.0",
+  "description": "Product videos from plain HTML pages and from the real app driven by a script, rendered frame by frame with headless Chrome and ffmpeg.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "check": "node check.mjs",
+    "hello": "node render.mjs examples/hello",
+    "hello:tall": "node render.mjs examples/hello --format tall --blur 4",
+    "new-order": "node render.mjs examples/new-order --blur 2",
+    "hello:music": "node examples/hello/music.mjs",
+    "tour:check": "node examples/tour/record.mjs --dry",
+    "tour:record": "node examples/tour/record.mjs",
+    "tour": "node render.mjs examples/tour --blur 2"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

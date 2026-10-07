@@ -1,0 +1,89 @@
+/* Shared base for the video pages: tokens, the fixed-size stage, the browser frame, the clip.
+   The fonts are the system's, so a fresh clone renders with nothing to download. For your own
+   brand, add @font-face rules with relative paths (pages are opened from file://, no server) and
+   change the tokens below. */
+:root {
+  --accent: #2F6FED;
+  --accent-2: #12A594;
+  --ink: #14181F;
+  --muted: #5B6472;
+  --bg: #F3F5F9;
+  --font-head: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+* { box-sizing: border-box; margin: 0; }
+html, body { background: #111; }
+
+.stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  /* Kept clear of text in every format. tall is wider at the top and bottom, where TikTok and
+     Reels draw their own caption, buttons and progress bar over the video. */
+  --safe-top: 80px;
+  --safe-bottom: 80px;
+  --safe-side: 120px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+/* Keep in step with FORMATS in render.mjs. */
+/* tall: the box that is clear of both TikTok and Reels overlays (see docs/playbook.md).
+   Text and anything that matters stays inside x 120..888, y 288..1248. */
+[data-format="tall"] .stage { width: 1080px; height: 1920px; --safe-top: 288px; --safe-bottom: 672px; --safe-side: 120px; --safe-right: 192px; }
+[data-format="feed"] .stage { width: 1080px; height: 1350px; --safe-top: 90px; --safe-bottom: 90px; --safe-side: 70px; }
+
+/* Every animated element holds its first frame before its delay and its last frame after.
+   !important, because an `animation:` shorthand in a page resets fill-mode to none. */
+.stage * { animation-fill-mode: both !important; }
+
+/* A slow zoom on a whole scene: wrap the scene's content in .drift and give it --s (start) and --d
+   (length). will-change is what keeps the text steady: without it Chrome redraws the text at every
+   new size and snaps each glyph to a whole pixel, so the words shake from frame to frame. With it
+   the scene is drawn once and the picture is scaled. */
+.drift { position: absolute; inset: 0; transform-origin: 50% 60%; will-change: transform; animation: drift var(--d, 4s) linear var(--s, 0s); }
+@keyframes drift { to { transform: scale(1.045); } }
+
+.browser {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 40px 90px -30px rgba(20, 30, 60, .45), 0 0 0 1px rgba(20, 24, 31, .08);
+}
+.browser-bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  background: #E6E9F0;
+}
+.browser-bar i { width: 12px; height: 12px; border-radius: 50%; background: #C3C9D6; }
+.browser-view { overflow: hidden; }
+.browser-view img { display: block; width: 100%; }
+
+/* Shown inside another video (?embed, see stage.js): the outer page supplies the headline and the
+   closing card, so the inner page drops its own. `.top h1` keeps its space: the block under it
+   must not move up. */
+html[data-embed], [data-embed] body, [data-embed] .stage { background: transparent; }
+[data-embed] .h, [data-embed] .end, [data-embed] .wm { display: none !important; }
+[data-embed] .top h1 { visibility: hidden; }
+
+/* A recorded take of the real app (lib/clip.js). The box clips; the world inside it is in the
+   take's own pixels and carries the camera transform. */
+.clip { position: absolute; overflow: hidden; background: #fff; }
+.clip-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.clip-frame { display: block; }
+.clip-cursor { position: absolute; left: 0; top: 0; width: 30px; margin: -2px 0 0 -2px; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .35)); }
+.clip-rings i { position: absolute; width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 0 0 4px var(--accent); }
+.clip-caption {
+  position: absolute; left: 50%; bottom: 54px; padding: 0 30px; border-radius: 34px; white-space: nowrap;
+  background: rgba(20, 24, 31, .92); color: #fff; font: 600 34px/68px var(--font-body); opacity: 0;
+  /* The pale ring keeps the chip readable when the app under it is dark. */
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .34), 0 18px 40px -16px rgba(0, 0, 0, .5);
+}

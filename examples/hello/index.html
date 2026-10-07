@@ -1,0 +1,135 @@
+<!doctype html>
+<!-- "Hello": the smallest drawn video. Nothing here is a screenshot or a recording: it is a web
+     page, and every bit of motion is a CSS animation whose delay is an offset from the start of
+     the video. 9 s, laid out for wide (16:9) and tall (9:16).
+     Preview: open this file in a browser (a scrubber appears at the bottom; add ?format=tall).
+     Render:  node render.mjs examples/hello [--format tall] [--blur 4]
+     It also has a second edit, the "slow" cut (13 s, everything held longer): add ?cut=slow in the
+     browser, or --cut slow when rendering. See the [data-cut="slow"] block in the styles. -->
+<html lang="en" data-formats="wide tall" data-duration="9000" data-duration-slow="13000">
+<head>
+<meta charset="utf-8">
+<title>hello</title>
+<link rel="stylesheet" href="../../lib/stage.css">
+<style>
+  /* ---- Timing: when each part starts. Change a number here and everything after it follows. ---- */
+  .stage {
+    --type: .5s;      /* the command is typed */
+    --stats: 2.3s;    /* the two numbers arrive and count up */
+    --chart: 3.5s;    /* the chart card arrives; its line starts drawing .4s later */
+    --tip: 5.5s;      /* the cursor goes to the peak, clicks, the tooltip opens */
+    --close: 7.4s;    /* everything out, closing line in */
+    --pop: cubic-bezier(.34, 1.4, .64, 1);   /* arrives with a small overshoot */
+  }
+  .drift { --s: 0s; --d: var(--close); }   /* the scene comes slowly closer until it leaves */
+
+  /* ---- The "slow" cut: the same page with other start times. A cut only changes timing (and may
+          hide scenes with display: none); its length is data-duration-slow on <html>. ---- */
+  [data-cut="slow"] .stage { --type: .8s; --stats: 3.4s; --chart: 5.4s; --tip: 8.2s; --close: 11.2s; }
+
+  /* An integer the browser can animate, which makes a counter out of plain CSS. */
+  @property --n { syntax: '<integer>'; inherits: false; initial-value: 0; }
+
+  /* One column, 768 px wide: inside the safe box of the tall format, centred in the wide one. */
+  .ui { position: absolute; left: var(--safe-side); top: var(--safe-top); width: 768px; animation: out .35s ease-in var(--close); }
+  [data-format="wide"] .ui { left: 576px; top: 96px; }
+  @keyframes out { to { opacity: 0; transform: translateY(-30px); } }
+
+  h1 { font: 700 68px/1.06 var(--font-head); letter-spacing: -.02em; }
+  .card { background: #fff; border-radius: 22px; box-shadow: 0 30px 70px -30px rgba(20, 30, 60, .4), 0 0 0 1px rgba(20, 24, 31, .07); }
+  .eyebrow { font: 600 20px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  /* Typing: the text is all there, its box opens one character at a time. */
+  .term { margin-top: 30px; padding: 0 26px; height: 68px; border-radius: 16px; background: var(--ink); color: #fff; font: 600 26px/68px var(--font-mono); display: flex; gap: 14px; }
+  .term i { font-style: normal; color: var(--accent-2); }
+  .term span { width: 33ch; overflow: hidden; white-space: nowrap; animation: type 1.5s steps(33) var(--type); }
+  @keyframes type { from { width: 0; } }
+
+  /* Two numbers that count up. --to is the value. */
+  .stats { display: flex; gap: 16px; margin-top: 18px; }
+  .stat { flex: 1; padding: 22px 24px; animation: lift .5s var(--pop) var(--stats); }
+  .stat + .stat { animation-delay: calc(var(--stats) + .12s); }
+  .stat b { display: block; margin-top: 10px; font: 700 64px/1 var(--font-head); letter-spacing: -.02em; }
+  .num { --n: var(--to); counter-reset: n var(--n); animation: count 1s cubic-bezier(.15, .7, .2, 1) calc(var(--stats) + .2s); }
+  .num::after { content: counter(n); }
+  @keyframes count { from { --n: 0; } }
+  @keyframes lift { from { opacity: 0; transform: translateY(50px) scale(.97); } }
+
+  /* A chart that draws itself: pathLength="1" on the line, then the dash offset runs from 1 to 0. */
+  .chart { position: relative; margin-top: 18px; padding: 24px; height: 360px; animation: lift .5s var(--pop) var(--chart); }
+  svg.plot { position: absolute; left: 24px; top: 70px; width: 720px; height: 270px; overflow: visible; }
+  .plot .grid { stroke: rgba(20, 24, 31, .08); }
+  .plot .line { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; animation: draw 1.6s linear calc(var(--chart) + .4s); }
+  .plot .dot { fill: var(--accent); transform-box: fill-box; transform-origin: center; animation: dot .3s var(--pop) var(--at); }
+  @keyframes draw { from { stroke-dashoffset: 1; } }
+  @keyframes dot  { from { transform: scale(0); } }
+
+  /* A cursor that glides to the peak, a ring for the click, a tooltip that opens. */
+  .cursor { position: absolute; left: 0; top: 0; width: 44px; transform: translate(var(--px), var(--py)); animation: glide .75s cubic-bezier(.5, 0, .2, 1) var(--tip); }
+  @keyframes glide { from { transform: translate(680px, 420px); opacity: 0; } 15% { opacity: 1; } }
+  .ring { position: absolute; left: calc(var(--px) - 26px); top: calc(var(--py) - 26px); width: 52px; height: 52px; border-radius: 50%; box-shadow: 0 0 0 4px var(--accent-2); opacity: 0; animation: ring .5s ease-out calc(var(--tip) + .75s); }
+  @keyframes ring { 0% { opacity: 0; } 1% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.5); } }
+  .tip { position: absolute; left: calc(var(--px) - 250px); top: calc(var(--py) + 30px); padding: 12px 18px; border-radius: 14px; background: var(--ink); color: #fff; font: 400 20px/1.5 var(--font-body); white-space: nowrap; transform-origin: 100% 0; animation: tip .35s var(--pop) calc(var(--tip) + .85s); }
+  @keyframes tip { from { opacity: 0; transform: scale(.6); } }
+
+  /* ---- Cover: what frame 0 shows, and so the thumbnail. Complete from the first frame, then it
+          lifts away and the page underneath starts working. ---- */
+  .cover { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; justify-content: center; padding: 0 var(--safe-side) 0 576px; gap: 34px; animation: lift-off .4s ease-in .45s; }
+  .cover b { font: 700 124px/1.02 var(--font-head); letter-spacing: -.03em; }
+  .cover span { font: 600 34px/1 var(--font-mono); color: var(--accent); }
+  [data-format="tall"] .cover { padding: 0 var(--safe-side); justify-content: flex-start; padding-top: 420px; }
+  [data-format="tall"] .cover b { font-size: 112px; }
+  @keyframes lift-off { to { opacity: 0; transform: translateY(-60px); visibility: hidden; } }
+
+  /* ---- Closing line ---- */
+  .end { position: absolute; left: var(--safe-side); top: 620px; width: 768px; font: 700 76px/1.08 var(--font-head); letter-spacing: -.02em; animation: endin .5s var(--ease) calc(var(--close) + .3s); }
+  .end small { display: block; margin-top: 26px; font: 400 32px/1.3 var(--font-body); letter-spacing: 0; color: var(--muted); animation: endin .5s var(--ease) calc(var(--close) + .6s); }
+  [data-format="wide"] .end { left: 576px; top: 380px; }
+  @keyframes endin { from { opacity: 0; transform: translateY(26px); } }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- COPY: every word on screen is in this block. -->
+  <!-- .drift (lib/stage.css): the whole scene comes slowly closer while it is on. -->
+  <div class="drift">
+  <div class="ui">
+    <h1>This video is a web page.</h1>
+    <div class="term"><i>$</i><span>node render.mjs examples/hello</span></div>
+    <div class="stats">
+      <div class="card stat"><span class="eyebrow">Frames rendered</span><b class="num" style="--to:270"></b></div>
+      <div class="card stat"><span class="eyebrow">Frames per second</span><b class="num" style="--to:30"></b></div>
+    </div>
+    <div class="card chart">
+      <div class="eyebrow">Drawn by a CSS animation</div>
+      <svg class="plot" viewBox="0 0 720 270" id="plot"></svg>
+      <div class="ring"></div>
+      <div class="tip">The peak: <b>frame 162</b></div>
+      <svg class="cursor" viewBox="0 0 28 38"><path d="M2 2v29l7.5-7 5 12 5-2-5-11.5H25z" fill="#14181F" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  </div>
+
+  <div class="cover"><b>This video is a web page.</b><span>HTML + CSS + headless Chrome + ffmpeg</span></div>
+
+  <div class="end">HTML, CSS, a headless browser.<small>Seek to a frame, take a screenshot, repeat. ffmpeg does the rest.</small></div>
+
+</div>
+<script>
+// Builds the chart from numbers. The motion is all CSS; this only creates the elements.
+const values = [18, 24, 22, 31, 38, 35, 47, 52, 49, 61, 70, 66, 78, 91, 84, 80, 86, 79, 83];
+const peak = values.indexOf(Math.max(...values));
+const X = i => 10 + i * 700 / (values.length - 1), Y = v => 250 - v * 2.4;
+document.getElementById('plot').innerHTML =
+  [0, 50, 100].map(v => `<line class="grid" x1="10" x2="710" y1="${Y(v)}" y2="${Y(v)}"/>`).join('') +
+  `<polyline class="line" pathLength="1" points="${values.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}"/>` +
+  values.map((v, i) => `<circle class="dot" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="6" style="--at:calc(var(--chart) + .4s + ${(i / (values.length - 1) * 1.6).toFixed(3)}s)"/>`).join('');
+// Where the cursor lands: the peak, in the card's own pixels (the plot sits at 24, 70).
+const card = document.querySelector('.chart');
+card.style.setProperty('--px', (24 + X(peak)) + 'px');
+card.style.setProperty('--py', (70 + Y(values[peak])) + 'px');
+</script>
+<script src="../../lib/stage.js"></script>
+</body>
+</html>

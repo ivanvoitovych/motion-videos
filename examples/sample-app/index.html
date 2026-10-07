@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- The sample app: a made-up plant shop's back office. Plain HTML, CSS and JS, no backend; the
+     orders live in memory, so every page load starts from the same state and a take can be shot
+     again without cleaning anything up. It exists to be filmed by examples/tour/record.mjs. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fernway</title>
+<link rel="stylesheet" href="app.css">
+<script>if (!localStorage.getItem('fernway-session')) location.replace('login.html');</script>
+</head>
+<body>
+<aside class="side">
+  <div class="brand"><span class="leaf"></span>Fernway</div>
+  <nav>
+    <a href="#dashboard" data-view="dashboard" class="on">Dashboard</a>
+    <a href="#orders" data-view="orders">Orders</a>
+    <a href="#settings" data-view="settings">Settings</a>
+  </nav>
+  <div class="who"><span class="avatar">MK</span><span id="who"></span></div>
+</aside>
+
+<main>
+  <section id="dashboard" class="view on">
+    <header><h1>Dashboard</h1><span class="muted">Last 14 days</span></header>
+    <div class="stats">
+      <div class="card stat"><span class="eyebrow">Orders</span><b id="stat-orders"></b><small class="up">+12% vs previous</small></div>
+      <div class="card stat"><span class="eyebrow">Revenue</span><b id="stat-revenue"></b><small class="up">+9% vs previous</small></div>
+      <div class="card stat"><span class="eyebrow">Waiting to ship</span><b id="stat-pending"></b><small>oldest: 2 days</small></div>
+    </div>
+    <div class="card chart"><span class="eyebrow">Orders per day</span><svg id="plot" viewBox="0 0 900 260"></svg></div>
+  </section>
+
+  <section id="orders" class="view">
+    <header>
+      <h1>Orders</h1>
+      <label class="inline">Status
+        <select id="filter"><option>All</option><option>Pending</option><option>Shipped</option><option>Delivered</option></select>
+      </label>
+      <button class="btn primary" id="new">New order</button>
+    </header>
+    <div class="card"><table>
+      <thead><tr><th>Order</th><th>Customer</th><th>Plant</th><th>Qty</th><th>Total</th><th>Status</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+
+  <section id="settings" class="view">
+    <header><h1>Settings</h1></header>
+    <div class="card settings">
+      <label class="switch"><input type="checkbox" id="dark"><span></span>Dark mode</label>
+      <label class="switch"><input type="checkbox" id="emails" checked><span></span>Email me when an order ships</label>
+    </div>
+  </section>
+</main>
+
+<div class="veil" id="veil">
+  <form class="card dialog" id="order">
+    <h2>New order</h2>
+    <label>Customer <input type="text" name="customer" required autocomplete="off"></label>
+    <label>Plant
+      <select name="plant"><option data-price="24">Boston fern</option><option data-price="39">Monstera</option><option data-price="18">Snake plant</option><option data-price="31">Fiddle-leaf fig</option></select>
+    </label>
+    <label>Quantity <output id="qty">1</output><input type="range" name="quantity" min="1" max="12" value="1"></label>
+    <label class="check"><input type="checkbox" name="gift"> Gift wrap</label>
+    <div class="actions"><button class="btn" type="button" id="cancel">Cancel</button><button class="btn primary" type="submit">Save order</button></div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

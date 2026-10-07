@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- The sign-in page of the sample app. It checks nothing: any email and password are accepted,
+     and a key in localStorage is the "session". It is here so a scenario has something to sign in to. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - Fernway</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="login">
+<form id="login" class="card">
+  <div class="brand"><span class="leaf"></span>Fernway</div>
+  <h1>Sign in</h1>
+  <label>Email <input type="email" name="email" required></label>
+  <label>Password <input type="password" name="password" required></label>
+  <button class="btn primary" type="submit">Sign in</button>
+</form>
+<script>
+document.getElementById('login').addEventListener('submit', e => {
+  e.preventDefault();
+  localStorage.setItem('fernway-session', e.target.email.value);
+  location.href = 'index.html';
+});
+</script>
+</body>
+</html>
