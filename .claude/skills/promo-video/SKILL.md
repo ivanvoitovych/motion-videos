@@ -213,7 +213,9 @@ Targets are a CSS selector, `{ text, in }` or `{ label }` (the field a label nam
 `out/<name>-failed.png` shows the page.
 
 - Sign in inside `login`, which is not filmed. Record as the demo account from Project settings.
-- The scenario deletes what it creates in `cleanup`, so a take can be repeated.
+- Reset the demo data in `setup` (runs after `login`, before the take, not filmed): fixed names,
+  dates and counts, so two takes differ only where the UI changed. The scenario deletes what it
+  creates in `cleanup`, so a take can be repeated.
 - Click a field before typing into it, as a person would; do not rely on autofocus.
 - Pick the window size (`width`, `height`) so the interface fills the frame: 1280x720 reads better
   in a 1920x1080 video than 1600x900.

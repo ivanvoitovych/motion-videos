@@ -127,8 +127,9 @@ target, and tell me what moved.
 ```
 
 **By hand.** Copy `examples/tour` to `videos/<name>`. In `record.mjs`, change the name in
-`record('tour', ...)`, put `base` in place of `serve`, set `start`, write your own `login`, and
-add a `cleanup` that deletes what the take creates (the example has none: its app keeps nothing).
+`record('tour', ...)`, put `base` in place of `serve`, set `start`, write your own `login`, add a
+`setup` that resets the demo data to a known state, and a `cleanup` that deletes what the take
+creates (the example needs neither: its app keeps nothing between page loads).
 
 ```js
 await record('<name>', {
@@ -140,6 +141,9 @@ await record('<name>', {
     await page.type('#email', 'demo@example.com');
     await page.type('#password', 'demo-password');
     await Promise.all([page.waitForNavigation(), page.click('button[type=submit]')]);
+  },
+  async setup(page) {                         // before the take, not filmed: same data every time
+    await page.evaluate(() => fetch('/api/demo/reset', { method: 'POST' }));
   },
   async cleanup(page) {                       // after the take, still signed in
     await page.evaluate(() => fetch('/api/demo/reset', { method: 'POST' }));
@@ -178,6 +182,10 @@ node videos/<name>/record.mjs --dry      # seconds: does every step find its tar
 node videos/<name>/record.mjs            # the take, about 10 times the length of the video
 node render.mjs videos/<name> --blur 2
 ```
+
+Why `setup` matters: with fixed names, dates and record counts, two takes of the same scenario
+differ only where the UI changed. A second run never shows yesterday's demo records, and a moved
+button is easy to spot.
 
 If a step fails, `out/<name>-failed.png` shows what the page looked like. After a take, the
 video's `index.html` plays it in the browser too, with the cursor, camera and captions.
